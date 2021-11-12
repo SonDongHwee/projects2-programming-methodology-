@@ -53,6 +53,14 @@ private:
     pair<char, string> tiles[TILE_BOARD_LENGTH][TILE_BOARD_LENGTH];
 };
 
+Board::Board(const char board_front[][TILE_BOARD_LENGTH], string board_back[][TILE_BOARD_LENGTH]){
+    for(int i=0;i<TILE_BOARD_LENGTH;i++){
+        for(int j=0;j<TILE_BOARD_LENGTH;j++){
+            tiles[i][j].first = board_front[i][j];
+            tiles[i][j].second = board_back[i][j];
+        }
+    }
+}
 void Board::change_board(char input_alphabets[], int input_size)
 {
     for (int k = 0; k < input_size; k++)
@@ -74,6 +82,68 @@ void Board::change_board(char input_alphabets[], int input_size)
                 }
             }
         }
+    }
+}
+string Board::get_num_from_back(char alphabet) const{
+    for(int i=0;i<TILE_BOARD_LENGTH;i++){
+        for(int j=0;j<TILE_BOARD_LENGTH;j++){
+            if(tiles[i][j].first == alphabet)
+                return tiles[i][j].second;
+        }
+    }
+    return " ";
+}
+void Board::print_front() const{
+    for (int i = 0; i < TILE_BOARD_LENGTH; i++)
+    {
+        cout << "| ";
+        for (int j = 0; j < TILE_BOARD_LENGTH; j++)
+        {
+            
+            cout << BOARD_FRONT[i][j] << "  | ";
+            
+        }
+        cout << endl;
+    }
+}
+void Board::print_back() const{
+    for (int i = 0; i < TILE_BOARD_LENGTH; i++)
+    {
+        cout << "| ";
+        for (int j = 0; j < TILE_BOARD_LENGTH; j++)
+        {
+            if (tiles[i][j].second.size() == 1)
+            {
+                cout << tiles[i][j].second << "  | ";
+            }
+            else
+            {
+                cout << tiles[i][j].second << " | ";
+            }
+        }
+        cout << endl;
+    }
+}
+void Board::print_one_flipped(char alphabet) const{
+    for (int i = 0; i < TILE_BOARD_LENGTH; i++)
+    {
+        cout << "| ";
+        for (int j = 0; j < TILE_BOARD_LENGTH; j++)
+        {
+            if(BOARD_FRONT[i][j] == alphabet){
+                if (tiles[i][j].second.size() == 1)
+                {
+                    cout << tiles[i][j].second << "  | ";
+                }
+                else
+                {
+                    cout << tiles[i][j].second << " | ";
+                }
+            }else{
+                cout << BOARD_FRONT[i][j] << "  | ";
+            }
+        }
+        cout << endl;
     }
 }
 
@@ -107,6 +177,30 @@ private:
     int chance_count[NUM_CHANCE_TYPE];
     int score;
 };
+Player::Player() : score(0){
+    chance_count[0] = NUM_CHANCE_1;
+    chance_count[1] = NUM_CHANCE_2;
+}
+void Player::add_score(int chance_type){
+    if(chance_type==3)
+        score += 2;
+    else 
+        score += 1;
+}
+int Player::get_score() const{
+    return score;
+}
+void Player::print_remaining_chance_list() const{
+    cout << "Chance 1:" << chance_count[0] << ",  " << "Chance 2:" << chance_count[1] <<  ",  " << "Chance 3:" << " unlimited" << endl;
+}
+bool Player::has_remaining_chance(int chance_type) const{
+    if(chance_type == 3)
+        return true;
+    if(chance_count[chance_type-1]>0)
+        return true;
+    else   
+        return false;
+}
 
 class Simple_Calculator
 {
@@ -197,9 +291,13 @@ int main(void)
         exit(1);
     }
     //      IMPLEMENT FROM HERE (Read Tile.txt)
-    //      string board_back[TILE_BOARD_LENGTH][TILE_BOARD_LENGTH];
-    //      ifs.close();
-    //      Game game=Game(BOARD_FRONT,board_back);
+    string board_back[TILE_BOARD_LENGTH][TILE_BOARD_LENGTH];
+    for (int i = 0; i < 16; i++)
+    {
+        ifs >> board_back[i / 4][i % 4];
+    }
+    ifs.close();
+    //Game game=Game(BOARD_FRONT,board_back);
     //      game.run();
     //	cout << "Thanks for playing the game!" << endl;
     return 0;

@@ -224,6 +224,37 @@ public:
     // @return : true if the number is integer, false if it is not.
     bool is_integer(float number) const;
 };
+float Simple_Calculator::calculate(string input[],int input_size) const{
+    if(input_size == 3){
+        return arithmetic_op(stoi(input[0]),stoi(input[2]),input[1]);
+    }
+    else{
+        if(input[1]=="+" || input[1]=="-"){
+            return arithmetic_op(stoi(input[0]),arithmetic_op(stoi(input[2]),stoi(input[4]),input[3]),input[1]);
+        }
+        else{
+            return arithmetic_op(arithmetic_op(stoi(input[0]),stoi(input[2]),input[1]),stoi(input[4]),input[3]);
+        }
+    }
+}
+float Simple_Calculator::arithmetic_op(float operand1, float operand2, string op) const{
+    if(op=="+")
+        return operand1 + operand2;
+    else if(op=="-")
+        return operand1 - operand2;
+    else if(op=="*")
+        return operand1 * operand2;
+    else if(op=="/")
+        return operand1 / operand2;
+    else    
+        return 0;
+}
+bool Simple_Calculator::is_integer(float number) const{
+    if(int(number) == number){
+        return true;
+    }
+    return false;
+}
 
 class Game
 {

@@ -194,12 +194,16 @@ void Player::print_remaining_chance_list() const{
     cout << "Chance 1:" << chance_count[0] << ",  " << "Chance 2:" << chance_count[1] <<  ",  " << "Chance 3:" << " unlimited" << endl;
 }
 bool Player::has_remaining_chance(int chance_type) const{
-    if(chance_type == 3)
+    if((chance_type == 3) || (chance_type == 0))
         return true;
     if(chance_count[chance_type-1]>0)
         return true;
     else   
         return false;
+}
+void Player::reduce_chance_count(int chance_type){
+    if(chance_type==1||chance_type==2)
+        chance_count[chance_type-1] -= 1;
 }
 
 class Simple_Calculator
@@ -242,7 +246,7 @@ float Simple_Calculator::arithmetic_op(float operand1, float operand2, string op
         return operand1 + operand2;
     else if(op=="-")
         return operand1 - operand2;
-    else if(op=="*")
+    else if(op=="x")
         return operand1 * operand2;
     else if(op=="/")
         return operand1 / operand2;
@@ -305,12 +309,223 @@ private:
     int target_num;
 };
 
+Game::Game(const char board_front[][TILE_BOARD_LENGTH], string board_back[][TILE_BOARD_LENGTH]) : current_player_idx(0),board(board_front,board_back)
+{
+}
+
 void Game::generate_target_num()
 {
     int min = 1;
     int max = 100;
     static const double fraction = 1.0 / (RAND_MAX + 1.0);
     target_num = min + static_cast<int>((max - min + 1) * (rand() * fraction));
+}
+void Game::run(){
+    cout << "Game start!" << endl;
+    cout << "Choose Game Type!" << endl;
+    cout << "Press 1 if you want to play basic game(fixed board)" << endl;
+    cout << "Press 2 if you want to play an advanced game(changeable board)" << endl;
+    cout << ">> ";
+    cin >> game_type;
+    while(!(game_type==1||game_type==2)){
+        cout << "Invalid game type! Choose among 1 and 2 again" << endl;
+        cout << ">> ";
+        cin >> game_type;
+    }
+    system("clear");
+    cout << "====== BACK ======" << endl;
+    board.print_back();
+    sleep(5);
+    system("clear");
+    
+    for(round=1;round<=ROUNDS;round++){
+        generate_target_num();
+        while (!verify_target_num(target_num))
+        {
+            generate_target_num();
+        }
+        while(!play_turn()){
+            system("clear");
+        }
+    }
+    print_final_result();
+
+
+}
+void Game::print_final_result() const{
+    cout << "FINAL RESULT" << endl;
+    cout << "Score if player 1: " << players[0].get_score() << endl;
+    cout << "Score if player 2: " << players[1].get_score() << endl;
+    if(players[0].get_score()>players[1].get_score())
+        cout << "Player 1 win!" << endl;
+    else if (players[0].get_score() < players[1].get_score())
+        cout << "Player 2 win!" << endl;
+    else
+        cout << "Draw!" << endl;
+}
+
+bool Game::play_turn(){
+    cout << "Player" << current_player_idx%2+1 << "'s turn!" << endl;
+    cout << endl;
+    cout << "Round " << round << " / " << ROUNDS << endl;
+    cout << "Current score:  [Player 1: " << players[0].get_score() << " | Player 2: " << players[1].get_score() << " ]" << endl;
+    cout << "Target number:  " << target_num << endl;
+    cout << endl;
+    cout << "Player " << (current_player_idx%2+1) << "'s Remaining Chance List:" << endl;
+    players[current_player_idx%2].print_remaining_chance_list();
+    cout << endl;
+    cout << "Press 0: No chance\nPress 1: Skip this turn!\nPress 2: Show back sides of all alphabet tiles!\nPress 3: Double Chance!" << endl;
+    cout << ">> ";
+    int chance_type;
+    cin >> chance_type;
+    while(0>chance_type || chance_type>3){
+        cout << "Please enter appropriate number" << endl;
+        cout << ">> ";
+        cin >> chance_type;
+    }
+    if(players[current_player_idx%2].has_remaining_chance(chance_type)){
+        players[current_player_idx%2].reduce_chance_count(chance_type);
+    }
+    else{
+        while (!players[current_player_idx%2].has_remaining_chance(chance_type)){
+            cout << "No remaining chance-" << chance_type << ", enter another chance please." << endl;
+            cout << ">> ";
+            cin >> chance_type;
+            if (players[current_player_idx%2].has_remaining_chance(chance_type))
+                players[current_player_idx%2].reduce_chance_count(chance_type);
+        }
+    }
+    char choice;
+    string input[5];
+    float result;
+    switch (chance_type)
+    {
+    case 1:
+        current_player_idx += 1;
+        return false;
+    case 2:
+        board.print_back();
+        sleep(3);
+        system("clear");
+    case 0:
+        for (int i = 1; i <= 3; i++)
+        {
+            cout << "====== BOARD ======" << endl;
+            board.print_front();
+            cout << "Choice-" << i << ": ";
+            cin >> choice;
+            while (!(choice >= 65 && choice <= 90))
+            {
+                cout << "Please check input type\n"
+                     << ">> ";
+                cin >> choice;
+            }
+            cout << "====== BOARD: One-Flipped ======" << endl;
+            input[i - 1] = board.get_num_from_back(choice);
+            board.print_one_flipped(choice);
+            bool is_num = false;
+            for(int j=0;j<NUM_POSSIBLE_NUM;j++){
+                if(input[i-1]==POSSIBLE_NUM[j]){
+                    is_num = true;
+                }
+            }
+            //Incorrect case 1: Invalid formula
+            if(i%2==1 && !is_num){
+                cout << "False!: Invalid formila: Change turn" << endl;
+                sleep(2);
+                current_player_idx++;
+                return false;
+            }
+            else if(i%2==0 && is_num){
+                cout << "False!: Invalid formila: Change turn" << endl;
+                sleep(2);
+                current_player_idx++;
+                return false;
+            }
+            //Incorrect case 2: Tile reuse
+            for(int j=1;j<=i;j++){
+                if(input[i-1]==input[j-1] && i!=j){
+                    cout << "False!: You entered same alphabet twice: Change turn" << endl;
+                    sleep(2);
+                    current_player_idx++;
+                    return false;
+                }
+            }
+            sleep(2);
+            system("clear");
+        }
+        system("clear");
+        result = calculator.calculate(input, 3);
+        cout << "Result: " << result << endl;
+        if (result == target_num)
+        {
+            cout << "Correct: Round done!" << endl;
+            players[current_player_idx % 2].add_score(chance_type);
+            sleep(2);
+            system("clear");
+            if (round % 2 == 0)
+                current_player_idx = 0;
+            else
+                current_player_idx = 1;
+            return true;
+        }
+        //Incorrect case 3: Wrong answer
+        else
+        {
+            cout << "False!: Incorrect answer : Change Turn" << endl;
+            sleep(2);
+            system("clear");
+            current_player_idx += 1;
+            return false;
+        }
+        break;
+    case 3:
+        for (int i = 1; i <= 5; i++)
+        {
+            cout << "====== BOARD ======" << endl;
+            board.print_front();
+            cout << "Choice-" << i << ": ";
+            cin >> choice;
+            while (!(choice >= 65 && choice <= 90))
+            {
+                cout << "Please check input type\n"
+                     << ">> ";
+                cin >> choice;
+            }
+            cout << "====== BOARD: One-Flipped ======" << endl;
+            input[i - 1] = board.get_num_from_back(choice);
+            board.print_one_flipped(choice);
+            sleep(2);
+            system("clear");
+        }
+        system("clear");
+        result = calculator.calculate(input, 5);
+        cout << "Result: " << result << endl;
+        if (result == target_num)
+        {
+            cout << "Correct: Round done!" << endl;
+            players[current_player_idx % 2].add_score(chance_type);
+            sleep(2);
+            system("clear");
+            if(round%2 == 0)
+                current_player_idx = 0;
+            else   
+                current_player_idx = 1;
+            return true;
+        }
+        else
+        {
+            cout << "False!: Incorrect answer : Change Turn" << endl;
+            sleep(2);
+            system("clear");
+            current_player_idx += 1;
+            return false;
+        }
+        break;
+    }
+}
+bool Game::verify_target_num(int target_num) const{
+    return true;
 }
 
 int main(void)
@@ -325,11 +540,14 @@ int main(void)
     string board_back[TILE_BOARD_LENGTH][TILE_BOARD_LENGTH];
     for (int i = 0; i < 16; i++)
     {
-        ifs >> board_back[i / 4][i % 4];
+        char c[16];
+        ifs >> c;
+        string tmp(c);
+        board_back[i / 4][i % 4] = tmp;
     }
     ifs.close();
-    //Game game=Game(BOARD_FRONT,board_back);
-    //      game.run();
-    //	cout << "Thanks for playing the game!" << endl;
+    Game game=Game(BOARD_FRONT,board_back);
+    game.run();
+    cout << "Thanks for playing the game!" << endl;
     return 0;
 }

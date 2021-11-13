@@ -397,6 +397,7 @@ bool Game::play_turn(){
     }
     char choice;
     string input[5];
+    char input_alphabets[5];
     float result;
     switch (chance_type)
     {
@@ -421,6 +422,7 @@ bool Game::play_turn(){
                 cin >> choice;
             }
             cout << "====== BOARD: One-Flipped ======" << endl;
+            input_alphabets[i-1] = choice;
             input[i - 1] = board.get_num_from_back(choice);
             board.print_one_flipped(choice);
             bool is_num = false;
@@ -431,13 +433,13 @@ bool Game::play_turn(){
             }
             //Incorrect case 1: Invalid formula
             if(i%2==1 && !is_num){
-                cout << "False!: Invalid formila: Change turn" << endl;
+                cout << "False!: Invalid formula: Change turn" << endl;
                 sleep(2);
                 current_player_idx++;
                 return false;
             }
             else if(i%2==0 && is_num){
-                cout << "False!: Invalid formila: Change turn" << endl;
+                cout << "False!: Invalid formula: Change turn" << endl;
                 sleep(2);
                 current_player_idx++;
                 return false;
@@ -461,6 +463,11 @@ bool Game::play_turn(){
         {
             cout << "Correct: Round done!" << endl;
             players[current_player_idx % 2].add_score(chance_type);
+            if(game_type==2){
+                board.change_board(input_alphabets,3);
+                board.print_back();
+                sleep(3);
+            }
             sleep(2);
             system("clear");
             if (round % 2 == 0)
@@ -505,6 +512,12 @@ bool Game::play_turn(){
         {
             cout << "Correct: Round done!" << endl;
             players[current_player_idx % 2].add_score(chance_type);
+            if (game_type == 2)
+            {
+                board.change_board(input_alphabets, 5);
+                board.print_back();
+                sleep(3);
+            }
             sleep(2);
             system("clear");
             if(round%2 == 0)
@@ -523,9 +536,30 @@ bool Game::play_turn(){
         }
         break;
     }
+    return false;
 }
 bool Game::verify_target_num(int target_num) const{
-    return true;
+    vector<int> num_vec;
+    vector<string> op_vec;
+    for(int i=0;i<TILE_BOARD_LENGTH;i++){
+        for(int j=0;j<TILE_BOARD_LENGTH;j++){
+            if ((board.get_num_from_back(BOARD_FRONT[i][j]) == "+") || (board.get_num_from_back(BOARD_FRONT[i][j]) == "-") || (board.get_num_from_back(BOARD_FRONT[i][j]) == "x") || (board.get_num_from_back(BOARD_FRONT[i][j]) == "/")){
+                op_vec.push_back(board.get_num_from_back(BOARD_FRONT[i][j]));
+            }
+            else
+                num_vec.push_back(stoi(board.get_num_from_back(BOARD_FRONT[i][j])));
+        }
+    }
+    for(int i=0;i<4;i++){
+        for(int j=0;j<12;j++){
+            for(int k=0;k<12;k++){
+                if((target_num==calculator.arithmetic_op(num_vec[j],num_vec[k],op_vec[i])) && k!=j){
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 int main(void)

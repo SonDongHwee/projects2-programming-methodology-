@@ -376,13 +376,15 @@ bool Game::play_turn(){
     cout << endl;
     cout << "Press 0: No chance\nPress 1: Skip this turn!\nPress 2: Show back sides of all alphabet tiles!\nPress 3: Double Chance!" << endl;
     cout << ">> ";
+    char chance_type_char;
     int chance_type;
-    cin >> chance_type;
-    while(0>chance_type || chance_type>3){
+    cin >> chance_type_char;
+    while(48>chance_type_char || chance_type_char>51){    //ASCII-48 = '0', ASCII-51 = '3' 
         cout << "Please enter appropriate number" << endl;
         cout << ">> ";
-        cin >> chance_type;
+        cin >> chance_type_char;
     }
+    chance_type = int(chance_type_char) - 48;
     if(players[current_player_idx%2].has_remaining_chance(chance_type)){
         players[current_player_idx%2].reduce_chance_count(chance_type);
     }
@@ -446,7 +448,7 @@ bool Game::play_turn(){
             }
             //Incorrect case 2: Tile reuse
             for(int j=1;j<=i;j++){
-                if(input[i-1]==input[j-1] && i!=j){
+                if(input_alphabets[i-1]==input_alphabets[j-1] && i!=j){
                     cout << "False!: You entered same alphabet twice: Change turn" << endl;
                     sleep(2);
                     current_player_idx++;
@@ -465,6 +467,7 @@ bool Game::play_turn(){
             players[current_player_idx % 2].add_score(chance_type);
             if(game_type==2){
                 board.change_board(input_alphabets,3);
+                cout << "====== Changed Board ======" << endl;
                 board.print_back();
                 sleep(3);
             }
@@ -500,8 +503,43 @@ bool Game::play_turn(){
                 cin >> choice;
             }
             cout << "====== BOARD: One-Flipped ======" << endl;
+            input_alphabets[i - 1] = choice;
             input[i - 1] = board.get_num_from_back(choice);
             board.print_one_flipped(choice);
+            bool is_num = false;
+            for (int j = 0; j < NUM_POSSIBLE_NUM; j++)
+            {
+                if (input[i - 1] == POSSIBLE_NUM[j])
+                {
+                    is_num = true;
+                }
+            }
+            //Incorrect case 1: Invalid formula
+            if (i % 2 == 1 && !is_num)
+            {
+                cout << "False!: Invalid formula: Change turn" << endl;
+                sleep(2);
+                current_player_idx++;
+                return false;
+            }
+            else if (i % 2 == 0 && is_num)
+            {
+                cout << "False!: Invalid formula: Change turn" << endl;
+                sleep(2);
+                current_player_idx++;
+                return false;
+            }
+            //Incorrect case 2: Tile reuse
+            for (int j = 1; j <= i; j++)
+            {
+                if (input_alphabets[i - 1] == input_alphabets[j - 1] && i != j)
+                {
+                    cout << "False!: You entered same alphabet twice: Change turn" << endl;
+                    sleep(2);
+                    current_player_idx++;
+                    return false;
+                }
+            }
             sleep(2);
             system("clear");
         }
@@ -515,6 +553,7 @@ bool Game::play_turn(){
             if (game_type == 2)
             {
                 board.change_board(input_alphabets, 5);
+                cout << "====== Changed Board ======" << endl;
                 board.print_back();
                 sleep(3);
             }
